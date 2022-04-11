@@ -23,8 +23,8 @@ def obtain_plot_title():
             and title_count == 0)
             )
     if not filecheck:
-        raise Exception('No GPS or TLE file selected. ', 
-            'Plot title must be provided as arg.')
+        raise Exception("""No GPS or TLE files found. 
+            Plot title must be provided as arg.""")
     for x in filecheck:
         plot_title = (
             ' Simulated Orbits vs Actual, Starting Day ' 
@@ -99,10 +99,9 @@ def filter_OPS_data(data_lines, filename, y_axis):
             try:
                 float(y_val)
             except ValueError: 
-                print('Flux value at line ', 
-                    str(count[0] + i + 1),' not a float.')
+                print(f"Flux value at line {count[0] + i + 1} not a float.")
             extrema_check.append(float(y_val))
-        if apogee_perigee_check(extrema_check) == True:
+        if apogee_perigee_check(extrema_check) is True:
             str_mjd = data_lines[count[0] + i + 2].split()[1].rstrip(",")
             key = round((float(str_mjd) - float(base_time)) * 24, 6)
             file_data[key] = round(extrema_check[1],6)
@@ -124,14 +123,12 @@ def filter_TLE_data(data_lines, filename, y_axis):
         try:
             float(y_val)
         except ValueError: 
-            print('Flux value at line ', 
-                str(count[0] + 1),' not a float.')
+            print(f"Flux value at line {count[0] + 1} not a float.")
         str_mjd = data_lines[count[0] + 1].split()[1].rstrip(",")
         try:
             float(str_mjd)
         except ValueError: 
-            print('MJD at line ', 
-                str(count[0] + 1),' not a float.')
+            print(f"MJD at line {count[0] + 1} not a float.")
         key = round((float(str_mjd) - float(base_time)) * 24, 6)
         file_data[key] = round(float(y_val),6)
 
@@ -167,8 +164,8 @@ def filter_GPS_data(data_lines, filename, y_axis):
                     try:
                         float(j)
                     except ValueError: 
-                        print('Coordinate given at line ', str(count[0] + i + 1),
-                            'not a float.')
+                        print(f"Coordinate given at line {count[0] + i + 1} 
+                            not a float.")
                 flt_coords = [float(x) for x in str_coords] 
                 y_val = compute_semi_maj_axis(*flt_coords)
             elif y_axis == 'altitude':
@@ -176,19 +173,17 @@ def filter_GPS_data(data_lines, filename, y_axis):
             extrema_check.append(y_val)
 
         # Pair timestamp with y-value for apogee and perigee data:
-        if apogee_perigee_check(extrema_check) == True:
+        if apogee_perigee_check(extrema_check) is True:
             try:
                 float(data_lines[count[0] + 1][:5])
             except ValueError: 
-                print('MJD at line ', 
-                    str(count[0] + 1),' not a float.')
+                print(f"MJD at line {count[0] + 1} not a float.")
             else:
                 mjd = float(data_lines[count[0] + 1][:5])
             try:
                 float(data_lines[count[0] + 1][6:15].strip())
             except ValueError: 
-                print('MJD at line ', 
-                    str(count[0] + 1),' not a float.')
+                print(f"MJD at line {count[0] + 1} not a float.")
             else:
                 deci = float(data_lines[count[0] + 1][6:15].strip()) / 86400
             time = mjd + deci
@@ -230,7 +225,7 @@ def plot_ols_reg(x_lab, y_lab, title = '', scatter = False,
     elif 'ltitude' in y_lab:
         y_axis = 'altitude'
     else:
-        raise Exception('Invalid y_axis value: ', y_axis)
+        raise Exception(f"Invalid y_axis value: {y_axis})
     if title == '':
         title = obtain_plot_title()
     input_data = load_orbit_data(y_axis)
@@ -269,9 +264,9 @@ def plot_ols_reg(x_lab, y_lab, title = '', scatter = False,
         x = np.array([i for i in input_data[file_key].keys()])
         y = np.array([j for j in input_data[file_key].values()])
         m, b = np.polyfit(x, y, 1)
-        if start_aligned == True and filecheck == True:
+        if start_aligned is True and filecheck is True:
                 b =  y_intercept / (len(input_data) -  1)
-        if scatter == True:
+        if scatter is True:
             plt.scatter(x,y,s=12, color = colours[colour[0]])
         plt.plot(x, m*x + b, label = filelabel, color = colours[colour[0]])
 
