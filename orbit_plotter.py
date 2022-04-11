@@ -22,6 +22,9 @@ def obtain_plot_title():
             if any(y in x for y in ('GPS', 'TLE'))
             and title_count == 0)
             )
+    if not filecheck:
+        raise Exception("""No GPS or TLE files found. 
+            Plot title must be provided as arg.""")
     for x in filecheck:
         plot_title = (
             ' Simulated Orbits vs Actual, Starting Day ' 
@@ -41,6 +44,8 @@ def load_orbit_data(y_axis):
     filecheck = ((x for x in os.listdir("../../plot_input_files/") 
             if not 'DS_Store' in x)
             )
+    if not filecheck:
+        raise  Exception('No files found in plot_input_files.')
     for x in filecheck:
         file_path = "../../plot_input_files/" + x
         with open(file_path) as f:
@@ -82,9 +87,6 @@ def filter_OPS_data(data_lines, filename, y_axis):
         split_index = 16
     elif y_axis == 'semi-major':
         split_index = 8
-    else:
-        print('Exception: invalid y_axis value: ', y_axis)
-        exit()
     base_time = data_lines[1].split()[1].rstrip(",")
     file_data = OrderedDict()
     neighbours_offset = [-1,0,1]
@@ -94,8 +96,12 @@ def filter_OPS_data(data_lines, filename, y_axis):
             y_val = (
                 data_lines[count[0] + i + 2].split()[split_index].rstrip(",")
                 )
+            try:
+                float(y_val)
+            except ValueError: 
+                print(f"Flux value at line {count[0] + i + 1} not a float.")
             extrema_check.append(float(y_val))
-        if apogee_perigee_check(extrema_check) == True:
+        if apogee_perigee_check(extrema_check) is True:
             str_mjd = data_lines[count[0] + i + 2].split()[1].rstrip(",")
             key = round((float(str_mjd) - float(base_time)) * 24, 6)
             file_data[key] = round(extrema_check[1],6)
@@ -112,12 +118,17 @@ def filter_TLE_data(data_lines, filename, y_axis):
         split_index = 14
     elif y_axis == 'semi-major':
         split_index = 8
-    else:
-        print('Exception: invalid y_axis value: ', y_axis)
-        exit()
     for count in enumerate(data_lines[1:]):
         y_val = data_lines[count[0] + 1].split()[split_index].rstrip(",")
+        try:
+            float(y_val)
+        except ValueError: 
+            print(f"Flux value at line {count[0] + 1} not a float.")
         str_mjd = data_lines[count[0] + 1].split()[1].rstrip(",")
+        try:
+            float(str_mjd)
+        except ValueError: 
+            print(f"MJD at line {count[0] + 1} not a float.")
         key = round((float(str_mjd) - float(base_time)) * 24, 6)
         file_data[key] = round(float(y_val),6)
 
@@ -148,21 +159,33 @@ def filter_GPS_data(data_lines, filename, y_axis):
                     [data_lines[count[0] + i + 1].split()[split_index 
                     + j] for j in range(6)]
                     )
-                y_val = compute_semi_maj_axis(
-                    float(str_x), float(str_y), float(str_z), 
-                    float(str_u), float(str_v), float(str_w)
-                    )
+                str_coords = [str_x, str_y, str_z, str_u, str_v, str_w]
+                for j in str_coords:
+                    try:
+                        float(j)
+                    except ValueError: 
+                        print(f"Coordinate given at line {count[0] + i + 1} 
+                            not a float.")
+                flt_coords = [float(x) for x in str_coords] 
+                y_val = compute_semi_maj_axis(*flt_coords)
             elif y_axis == 'altitude':
                 y_val = data_lines[count[0] + i + 1].split()[split_index + 6]
-            else:
-                print('Exception: invalid y_axis value: ', y_axis)
-                exit()
             extrema_check.append(y_val)
 
         # Pair timestamp with y-value for apogee and perigee data:
-        if apogee_perigee_check(extrema_check) == True:
-            mjd = float(data_lines[count[0] + 1][:5])
-            deci = float(data_lines[count[0] + 1][6:15].strip()) / 86400
+        if apogee_perigee_check(extrema_check) is True:
+            try:
+                float(data_lines[count[0] + 1][:5])
+            except ValueError: 
+                print(f"MJD at line {count[0] + 1} not a float.")
+            else:
+                mjd = float(data_lines[count[0] + 1][:5])
+            try:
+                float(data_lines[count[0] + 1][6:15].strip())
+            except ValueError: 
+                print(f"MJD at line {count[0] + 1} not a float.")
+            else:
+                deci = float(data_lines[count[0] + 1][6:15].strip()) / 86400
             time = mjd + deci
             key = round((time - base_time) * 24, 6)
             file_data[key] = round(extrema_check[1],6)
@@ -172,7 +195,7 @@ def filter_GPS_data(data_lines, filename, y_axis):
 
 def compute_semi_maj_axis(x, y, z, u, v, w):
 
-    # Calculates semi-major axis from position and velocity (route a)
+    # Calculates semi-major axis from position and velocity
     r = math.sqrt(x**2 + y**2 + z**2)
     v2 = u**2 + v**2 + w**2
     # Grav. scale parameter, from UCL OPS: Keplerian_elements.cpp:
@@ -201,6 +224,8 @@ def plot_ols_reg(x_lab, y_lab, title = '', scatter = False,
         y_axis = 'semi-major'
     elif 'ltitude' in y_lab:
         y_axis = 'altitude'
+    else:
+        raise Exception(f"Invalid y_axis value: {y_axis})
     if title == '':
         title = obtain_plot_title()
     input_data = load_orbit_data(y_axis)
@@ -239,9 +264,9 @@ def plot_ols_reg(x_lab, y_lab, title = '', scatter = False,
         x = np.array([i for i in input_data[file_key].keys()])
         y = np.array([j for j in input_data[file_key].values()])
         m, b = np.polyfit(x, y, 1)
-        if start_aligned == True and filecheck == True:
+        if start_aligned is True and filecheck is True:
                 b =  y_intercept / (len(input_data) -  1)
-        if scatter == True:
+        if scatter is True:
             plt.scatter(x,y,s=12, color = colours[colour[0]])
         plt.plot(x, m*x + b, label = filelabel, color = colours[colour[0]])
 
@@ -262,9 +287,6 @@ def plot_ols_reg(x_lab, y_lab, title = '', scatter = False,
 
     #plt.xlim(741.5,742) # ZOOM-IN ON SECTION (MSIS 02-02-01)
     #plt.ylim(413.7265,413.7275)
-
-    #plt.xlim(730,750)# ZOOM-IN ON SECTION (JB 02-02-01)
-    #plt.ylim(408.65,408.85)
 
     plt.show()
 
