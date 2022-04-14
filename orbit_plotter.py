@@ -17,10 +17,10 @@ def obtain_plot_title():
 
     # Returns plot title from first of either TLE or GPS filenames
     plot_title = ''
-    title_count = 0
+    title_check = False
     filecheck = ((x for x in os.listdir("../../plot_input_files/") 
             if any(y in x for y in ('GPS', 'TLE'))
-            and title_count == 0)
+            and title_check is False)
             )
     if not filecheck:
         raise Exception("""No GPS or TLE files found. 
@@ -31,7 +31,7 @@ def obtain_plot_title():
             + x.split('_')[3] 
             + ' of ' + x.split('_')[2]
             )
-        title_count += 1
+        title_check = True
 
     return plot_title
 
@@ -39,7 +39,6 @@ def obtain_plot_title():
 def load_orbit_data(y_axis):
 
     # Returns full contents of each file in plot_input_files as item in list
-    file_data = OrderedDict()
     plot_data = OrderedDict()
     filecheck = ((x for x in os.listdir("../../plot_input_files/") 
             if not 'DS_Store' in x)
@@ -63,6 +62,7 @@ def load_orbit_data(y_axis):
         else:
             plot_data[x] = filter_GPS_data(
                 lines, x, y_axis)
+
     return plot_data
 
 
