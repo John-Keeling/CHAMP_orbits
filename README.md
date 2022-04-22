@@ -6,4 +6,4 @@ OPS numerically integrates along each step in a satellite's orbit and records th
 
 The purpose of the project was to compare the accuracy of predictions based on differing values of mass density from two atmosphere models, using differing configurations of various solar and geomagnetic input parameters.
 
-This code is an extract only, published here as an example of work completed as part of a master's project. The file will not run without the OPS output files.
+This code is an extract only, published here as an example of work completed as part of the master's project. The file will not run without the OPS output files.
